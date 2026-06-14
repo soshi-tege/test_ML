@@ -7,7 +7,18 @@ from pathlib import Path
 
 from config import REQUIREMENTS, VENV_DIR
 
-_COMPATIBLE_PYTHONS = ("python3.12", "python3.11", "python3.10", "python3")
+_COMPATIBLE_PYTHONS = (
+    ("python3.12", ()),
+    ("python3.11", ()),
+    ("python3.10", ()),
+    ("python3", ()),
+)
+_WINDOWS_COMPATIBLE_PYTHONS = (
+    ("py", ("-3.12",)),
+    ("py", ("-3.11",)),
+    ("py", ("-3.10",)),
+    ("py", ("-3",)),
+)
 _MAX_MINOR_VERSION = 12
 
 
@@ -19,13 +30,17 @@ def venv_python() -> Path:
 
 def _python_for_venv() -> str:
     """TensorFlow 向けに 3.10〜3.12 の Python を優先して選ぶ"""
-    for cmd in _COMPATIBLE_PYTHONS:
+    candidates = _COMPATIBLE_PYTHONS
+    if sys.platform == "win32":
+        candidates = _WINDOWS_COMPATIBLE_PYTHONS + candidates
+
+    for cmd, extra_args in candidates:
         exe = shutil.which(cmd)
         if not exe:
             continue
         minor = int(
             subprocess.check_output(
-                [exe, "-c", "import sys; print(sys.version_info.minor)"],
+                [exe, *extra_args, "-c", "import sys; print(sys.version_info.minor)"],
                 text=True,
             )
         )
